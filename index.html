@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK4 Solver | Differential Equations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-mark">RK<span>4</span></div>
+        <div>
+            <h1>Differential Equation Solver</h1>
+            <p>Fourth-Order Runge-Kutta Numerical Method</p>
+        </div>
+    </div>
+    <div class="status-pill"><span></span> Python Powered</div>
+</header>
+
+<main class="page">
+
+    <section class="hero">
+        <div>
+            <div class="eyebrow">NUMERICAL METHODS PROJECT</div>
+            <h2>Solve ODEs with <span>Runge-Kutta 4</span></h2>
+            <p>
+                Enter a first-order differential equation, choose your initial
+                conditions, and visualize the numerical solution.
+            </p>
+        </div>
+        <div class="hero-equation">
+            <div>dy</div>
+            <div class="fraction-line"></div>
+            <div>dx</div>
+            <strong>= f(x, y)</strong>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Problem Setup</h3>
+                <p>Define the differential equation and numerical parameters.</p>
+            </div>
+            <button class="ghost-btn" id="resetBtn">Reset</button>
+        </div>
+
+        <form id="solverForm">
+            <label class="field equation-field">
+                <span>Differential equation</span>
+                <div class="equation-box">
+                    <b>dy/dx =</b>
+                    <input id="equation" value="x + y" placeholder="e.g. x + y" required>
+                </div>
+                <small>Use x and y. Functions: sin, cos, tan, exp, log, sqrt. Powers: x**2.</small>
+            </label>
+
+            <div class="grid-4">
+                <label class="field">
+                    <span>Initial x₀</span>
+                    <input id="x0" type="number" step="any" value="0" required>
+                </label>
+                <label class="field">
+                    <span>Initial y₀</span>
+                    <input id="y0" type="number" step="any" value="1" required>
+                </label>
+                <label class="field">
+                    <span>Step size h</span>
+                    <input id="h" type="number" min="0.000001" step="any" value="0.1" required>
+                </label>
+                <label class="field">
+                    <span>Iterations</span>
+                    <input id="iterations" type="number" min="1" max="1000" value="10" required>
+                </label>
+            </div>
+
+            <div class="examples">
+                <span>Examples</span>
+                <button type="button" data-equation="x + y">x + y</button>
+                <button type="button" data-equation="x - y">x − y</button>
+                <button type="button" data-equation="x**2 + y">x² + y</button>
+                <button type="button" data-equation="sin(x) + y">sin(x) + y</button>
+            </div>
+
+            <button class="primary-btn" id="solveBtn" type="submit">
+                <span id="solveText">Calculate Solution</span>
+                <span id="spinner" class="spinner hidden"></span>
+            </button>
+        </form>
+
+        <div id="errorBox" class="error hidden"></div>
+    </section>
+
+    <section id="resultsArea" class="hidden">
+
+        <div class="stats">
+            <article class="stat-card">
+                <div class="stat-icon">RK</div>
+                <div><small>Method</small><strong>RK4</strong></div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">x</div>
+                <div><small>Final x</small><strong id="finalX">—</strong></div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">y</div>
+                <div><small>Final y</small><strong id="finalY">—</strong></div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">#</div>
+                <div><small>Steps</small><strong id="stepCount">—</strong></div>
+            </article>
+        </div>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h3>RK4 Calculation Table</h3>
+                    <p>Every iteration with its four intermediate slopes.</p>
+                </div>
+                <button class="secondary-btn" id="downloadBtn">Download CSV</button>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Step</th><th>x</th><th>y</th>
+                            <th>K₁</th><th>K₂</th><th>K₃</th><th>K₄</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h3>Solution Graph</h3>
+                    <p>Numerical approximation of y against x.</p>
+                </div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="solutionChart"></canvas>
+            </div>
+        </section>
+
+        <div class="two-col">
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h3>Exact Solution</h3>
+                        <p>Calculated symbolically by SymPy when possible.</p>
+                    </div>
+                </div>
+                <div id="exactSolution" class="math-result">
+                    No symbolic solution available.
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h3>Error Analysis</h3>
+                        <p>Maximum absolute error against the exact solution.</p>
+                    </div>
+                </div>
+                <div class="error-summary">
+                    <span>Maximum absolute error</span>
+                    <strong id="maxError">—</strong>
+                </div>
+            </section>
+        </div>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h3>Step-by-Step RK4 Simulation</h3>
+                    <p>Select an iteration to inspect K₁, K₂, K₃ and K₄.</p>
+                </div>
+                <select id="stepSelector"></select>
+            </div>
+
+            <div class="simulation">
+                <div class="simulation-main">
+                    <div class="sim-title">Iteration <span id="simStep">1</span></div>
+                    <div class="sim-grid">
+                        <div class="sim-card"><b>K₁</b><span id="simK1">—</span></div>
+                        <div class="sim-card"><b>K₂</b><span id="simK2">—</span></div>
+                        <div class="sim-card"><b>K₃</b><span id="simK3">—</span></div>
+                        <div class="sim-card"><b>K₄</b><span id="simK4">—</span></div>
+                    </div>
+                </div>
+                <div class="update-formula">
+                    <small>Update formula</small>
+                    <div>yₙ₊₁ = yₙ + (K₁ + 2K₂ + 2K₃ + K₄) / 6</div>
+                </div>
+            </div>
+        </section>
+
+    </section>
+
+    <section class="panel algorithm">
+        <div class="panel-heading">
+            <div>
+                <h3>How the RK4 Algorithm Works</h3>
+                <p>The four-stage method used by the Python backend.</p>
+            </div>
+        </div>
+
+        <div class="formula-grid">
+            <div><b>K₁</b><code>K₁ = h f(xₙ, yₙ)</code></div>
+            <div><b>K₂</b><code>K₂ = h f(xₙ+h/2, yₙ+K₁/2)</code></div>
+            <div><b>K₃</b><code>K₃ = h f(xₙ+h/2, yₙ+K₂/2)</code></div>
+            <div><b>K₄</b><code>K₄ = h f(xₙ+h, yₙ+K₃)</code></div>
+        </div>
+
+        <div class="final-formula">
+            yₙ₊₁ = yₙ + (K₁ + 2K₂ + 2K₃ + K₄) / 6
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <b>RK4 Differential Equation Solver</b>
+    <span>Python • Flask • SymPy • Chart.js</span>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
